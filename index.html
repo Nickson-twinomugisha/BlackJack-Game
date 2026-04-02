@@ -4,50 +4,31 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Blackjack</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; background: #1a5f2a; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; color: #fff; }
-    h1 { font-size: 2.5rem; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-    .game-area { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 900px; }
-    .hand-section { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 20px; }
-    .hand-label { font-size: 1.2rem; margin-bottom: 10px; display: flex; justify-content: space-between; }
-    .cards { display: flex; gap: 10px; min-height: 120px; flex-wrap: wrap; }
-    .card { width: 80px; height: 120px; background: #fff; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; padding: 8px; font-weight: bold; font-size: 1.2rem; box-shadow: 2px 2px 8px rgba(0,0,0,0.3); }
-    .card.red { color: #c00; }
-    .card.black { color: #000; }
-    .card-value { text-align: left; }
-    .card-suit { text-align: center; font-size: 2rem; }
-    .card-value-bottom { text-align: right; transform: rotate(180deg); }
-    .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
-    button { padding: 12px 24px; font-size: 1rem; border: none; border-radius: 5px; cursor: pointer; transition: transform 0.1s, background 0.2s; font-weight: bold; }
-    button:hover { transform: scale(1.05); }
-    button:active { transform: scale(0.95); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .btn-deal { background: #28a745; color: #fff; }
-    .btn-hit { background: #007bff; color: #fff; }
-    .btn-stand { background: #dc3545; color: #fff; }
-    .btn-double { background: #ffc107; color: #000; }
-    .btn-split { background: #6f42c1; color: #fff; }
-    .btn-insurance { background: #17a2b8; color: #fff; }
-    .result { font-size: 1.5rem; font-weight: bold; text-align: center; padding: 15px; border-radius: 8px; margin-top: 10px; }
-    .result.win { background: #28a745; }
-    .result.lose { background: #dc3545; }
-    .result.push { background: #ffc107; color: #000; }
-    .result.blackjack { background: #ffd700; color: #000; animation: glow 1s infinite alternate; }
-    @keyframes glow { from { box-shadow: 0 0 5px #ffd700; } to { box-shadow: 0 0 20px #ffd700; } }
-    .hidden { visibility: hidden; }
-    .balance { font-size: 1.2rem; margin-bottom: 10px; }
-    .bet-display { font-size: 1rem; margin-bottom: 5px; }
-    .dealer-hidden .card:not(.revealed) { background: #333; }
-    .dealer-hidden .card:not(.revealed) .card-value,
-    .dealer-hidden .card:not(.revealed) .card-suit,
-    .dealer-hidden .card:not(.revealed) .card-value-bottom { color: #333; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>Blackjack</h1>
+  
+  <div class="top-bar">
+    <div class="level-badge">LVL <span id="level">1</span></div>
+    <div class="xp-info">XP: <span id="xp">0</span> / <span id="xpNeeded">100</span></div>
+    <div class="streak-display streak-neutral" id="streakDisplay">
+      <span id="streakEmoji">⚖️</span> <span id="streakCount">0</span> Win Streak
+    </div>
+  </div>
+
+  <div class="progression-bar">
+    <div class="progression-info">
+      <span>Level <span id="levelProg">1</span></span>
+      <span><span id="xpProg">0</span> / <span id="xpNeededProg">100</span> XP</span>
+    </div>
+    <div class="bar-container">
+      <div class="bar-fill" id="xpBar" style="width: 0%"></div>
+    </div>
+  </div>
+
   <div class="balance">Balance: $<span id="balance">1000</span></div>
-  <div class="bet-display">Current Bet: $<span id="currentBet">0</span></div>
+  <div class="bet-display">Current Bet: $<span id="currentBet">0</span> | <span id="bonusText"></span></div>
   
   <div class="game-area">
     <div class="hand-section dealer-section">
@@ -70,6 +51,8 @@
     
     <div class="controls" id="betControls">
       <button class="btn-deal" onclick="placeBet()">Deal</button>
+      <button class="btn-stats" onclick="showStats()">Stats</button>
+      <button class="btn-achievements" onclick="showAchievements()">Achievements</button>
     </div>
     
     <div class="controls hidden" id="gameControls">
@@ -79,407 +62,48 @@
       <button class="btn-split hidden" id="splitBtn" onclick="split()">Split</button>
       <button class="btn-insurance hidden" id="insuranceBtn" onclick="insurance()">Insurance</button>
     </div>
+
+    <div class="controls">
+      <button class="btn-reset" onclick="resetProgress()">Reset Progress</button>
+    </div>
   </div>
 
-  <script>
-    let deck = [];
-    let playerHand = [];
-    let dealerHand = [];
-    let splitHand = [];
-    let balance = 1000;
-    let currentBet = 0;
-    let splitBet = 0;
-    let currentHand = 'player';
-    let canDouble = true;
-    let canSplit = false;
-    let insuranceTaken = false;
+  <div class="modal" id="statsModal">
+    <div class="modal-content">
+      <h2>📊 Statistics</h2>
+      <div class="stat-row"><span>Total Hands Played</span><span class="stat-value" id="statHands">0</span></div>
+      <div class="stat-row"><span>Wins</span><span class="stat-value" id="statWins">0</span></div>
+      <div class="stat-row"><span>Losses</span><span class="stat-value" id="statLosses">0</span></div>
+      <div class="stat-row"><span>Pushes</span><span class="stat-value" id="statPushes">0</span></div>
+      <div class="stat-row"><span>Blackjacks</span><span class="stat-value" id="statBlackjacks">0</span></div>
+      <div class="stat-row"><span>Biggest Win</span><span class="stat-value">$<span id="statBiggestWin">0</span></span></div>
+      <div class="stat-row"><span>Total Won</span><span class="stat-value">$<span id="statTotalWon">0</span></span></div>
+      <div class="stat-row"><span>Total Lost</span><span class="stat-value">$<span id="statTotalLost">0</span></span></div>
+      <div class="stat-row"><span>Win Rate</span><span class="stat-value" id="statWinRate">0%</span></div>
+      <div class="stat-row"><span>Best Win Streak</span><span class="stat-value" id="statBestStreak">0</span></div>
+      <div class="stat-row"><span>Current Win Streak</span><span class="stat-value" id="statCurrentStreak">0</span></div>
+      <div style="text-align: center; margin-top: 20px;"><button class="btn-deal" onclick="closeModal('statsModal')">Close</button></div>
+    </div>
+  </div>
 
-    const suits = ['♠', '♥', '♦', '♣'];
-    const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+  <div class="modal" id="achievementsModal">
+    <div class="modal-content">
+      <h2>🏆 Achievements</h2>
+      <p style="text-align: center; margin-bottom: 15px; color: #f39c12;">Unlocked: <span id="achievementCount">0</span>/<span id="achievementTotal">0</span></p>
+      <div class="achievements-grid" id="achievementsGrid"></div>
+      <div style="text-align: center; margin-top: 20px;"><button class="btn-deal" onclick="closeModal('achievementsModal')">Close</button></div>
+    </div>
+  </div>
 
-    function createDeck() {
-      deck = [];
-      for (let suit of suits) {
-        for (let value of values) {
-          deck.push({ suit, value });
-        }
-      }
-      shuffleDeck();
-    }
+  <div class="modal" id="levelUpModal">
+    <div class="modal-content" style="text-align: center;">
+      <h2 style="color: #f1c40f;">🎉 LEVEL UP!</h2>
+      <div style="font-size: 4rem; margin: 20px 0;" id="newLevelBadge">2</div>
+      <p id="levelUpReward" style="color: #2ecc71;"></p>
+      <button class="btn-deal" onclick="closeModal('levelUpModal')" style="margin-top: 20px;">Awesome!</button>
+    </div>
+  </div>
 
-    function shuffleDeck() {
-      for (let i = deck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
-      }
-    }
-
-    function getCardValue(card) {
-      if (['J', 'Q', 'K'].includes(card.value)) return 10;
-      if (card.value === 'A') return 11;
-      return parseInt(card.value);
-    }
-
-    function calculateHandValue(hand) {
-      let value = 0;
-      let aces = 0;
-      for (let card of hand) {
-        value += getCardValue(card);
-        if (card.value === 'A') aces++;
-      }
-      while (value > 21 && aces > 0) {
-        value -= 10;
-        aces--;
-      }
-      return value;
-    }
-
-    function createCardElement(card, hidden = false) {
-      const div = document.createElement('div');
-      const isRed = card.suit === '♥' || card.suit === '♦';
-      div.className = `card ${isRed ? 'red' : 'black'} ${hidden ? '' : 'revealed'}`;
-      div.innerHTML = `
-        <div class="card-value">${card.value}</div>
-        <div class="card-suit">${card.suit}</div>
-        <div class="card-value card-value-bottom">${card.value}</div>
-      `;
-      return div;
-    }
-
-    function renderHand(hand, containerId, scoreId, score) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = '';
-      hand.forEach(card => {
-        container.appendChild(createCardElement(card));
-      });
-      if (scoreId) {
-        document.getElementById(scoreId).textContent = score < 21 ? `Score: ${score}` : `Score: ${score}`;
-      }
-    }
-
-    function updateUI() {
-      const playerValue = calculateHandValue(playerHand);
-      document.getElementById('playerScore').textContent = `Score: ${playerValue}`;
-      renderHand(playerHand, 'playerCards', null, playerValue);
-
-      const dealerValue = calculateHandValue(dealerHand);
-      const dealerSection = document.querySelector('.dealer-cards');
-      dealerSection.classList.add('dealer-hidden');
-      document.getElementById('dealerScore').textContent = dealerHand.length > 0 ? `Score: ${getCardValue(dealerHand[0])} + ?` : '';
-      
-      const container = document.getElementById('dealerCards');
-      container.innerHTML = '';
-      dealerHand.forEach((card, i) => {
-        if (i === 0) {
-          container.appendChild(createCardElement(card, false));
-        } else if (dealerSection.classList.contains('dealer-hidden')) {
-          container.appendChild(createCardElement(card, true));
-        } else {
-          container.appendChild(createCardElement(card, false));
-        }
-      });
-
-      if (splitHand.length > 0) {
-        document.getElementById('splitSection').classList.remove('hidden');
-        const splitValue = calculateHandValue(splitHand);
-        document.getElementById('splitScore').textContent = `Score: ${splitValue}`;
-        renderHand(splitHand, 'splitCards', null, splitValue);
-      }
-
-      document.getElementById('balance').textContent = balance;
-      document.getElementById('currentBet').textContent = currentBet;
-
-      updateButtons();
-    }
-
-    function updateButtons() {
-      const hitBtn = document.getElementById('hitBtn');
-      const standBtn = document.getElementById('standBtn');
-      const doubleBtn = document.getElementById('doubleBtn');
-      const splitBtn = document.getElementById('splitBtn');
-      const insuranceBtn = document.getElementById('insuranceBtn');
-
-      if (currentHand === 'player') {
-        hitBtn.disabled = false;
-        standBtn.disabled = false;
-        doubleBtn.disabled = !canDouble || balance < currentBet;
-        splitBtn.classList.toggle('hidden', !canSplit || balance < currentBet);
-        insuranceBtn.classList.toggle('hidden', dealerHand.length < 2 || dealerHand[0].value !== 'A' || insuranceTaken);
-      } else if (currentHand === 'split') {
-        hitBtn.disabled = false;
-        standBtn.disabled = false;
-        doubleBtn.disabled = splitHand.length !== 2 || balance < splitBet;
-        splitBtn.classList.add('hidden');
-        insuranceBtn.classList.add('hidden');
-      } else {
-        hitBtn.disabled = true;
-        standBtn.disabled = true;
-        doubleBtn.disabled = true;
-        splitBtn.classList.add('hidden');
-        insuranceBtn.classList.add('hidden');
-      }
-    }
-
-    function placeBet() {
-      const betAmount = Math.min(100, balance);
-      if (betAmount <= 0) return;
-      currentBet = betAmount;
-      balance -= currentBet;
-      startGame();
-    }
-
-    function startGame() {
-      createDeck();
-      playerHand = [];
-      dealerHand = [];
-      splitHand = [];
-      currentHand = 'player';
-      canDouble = true;
-      canSplit = false;
-      insuranceTaken = false;
-      splitBet = 0;
-
-      document.getElementById('betControls').classList.add('hidden');
-      document.getElementById('gameControls').classList.remove('hidden');
-      document.getElementById('splitSection').classList.add('hidden');
-      document.getElementById('playerResult').innerHTML = '';
-      document.getElementById('dealerResult').innerHTML = '';
-      document.getElementById('splitResult').innerHTML = '';
-
-      playerHand.push(deck.pop());
-      dealerHand.push(deck.pop());
-      playerHand.push(deck.pop());
-      dealerHand.push(deck.pop());
-
-      if (playerHand[0].value === playerHand[1].value && balance >= currentBet) {
-        canSplit = true;
-      }
-
-      updateUI();
-
-      if (calculateHandValue(playerHand) === 21) {
-        setTimeout(() => stand(), 500);
-        return;
-      }
-
-      if (dealerHand[0].value === 'A') {
-        document.getElementById('insuranceBtn').classList.remove('hidden');
-      }
-
-      updateButtons();
-    }
-
-    function hit() {
-      const hand = currentHand === 'player' ? playerHand : splitHand;
-      hand.push(deck.pop());
-      
-      const value = calculateHandValue(hand);
-      
-      if (value > 21) {
-        if (currentHand === 'player') {
-          showResult('player', 'Bust!', 'lose');
-          if (splitHand.length > 0) {
-            currentHand = 'split';
-            updateUI();
-          } else {
-            endGame();
-          }
-        } else {
-          showResult('split', 'Bust!', 'lose');
-          balance += splitBet;
-          endGame();
-        }
-      }
-      updateUI();
-    }
-
-    function stand() {
-      if (currentHand === 'player') {
-        if (splitHand.length > 0) {
-          currentHand = 'split';
-          updateUI();
-        } else {
-          currentHand = 'dealer';
-          dealerPlay();
-        }
-      } else if (currentHand === 'split') {
-        balance += splitBet;
-        currentHand = 'dealer';
-        dealerPlay();
-      }
-      updateUI();
-    }
-
-    function dealerPlay() {
-      const dealerSection = document.querySelector('.dealer-cards');
-      dealerSection.classList.remove('dealer-hidden');
-      document.getElementById('dealerScore').textContent = `Score: ${calculateHandValue(dealerHand)}`;
-      renderHand(dealerHand, 'dealerCards', null, calculateHandValue(dealerHand));
-
-      while (calculateHandValue(dealerHand) < 17) {
-        dealerHand.push(deck.pop());
-        renderHand(dealerHand, 'dealerCards', null, calculateHandValue(dealerHand));
-      }
-
-      determineWinner();
-    }
-
-    function doubleDown() {
-      const hand = currentHand === 'player' ? playerHand : splitHand;
-      const bet = currentHand === 'player' ? currentBet : splitBet;
-      
-      if (balance < bet) return;
-      
-      balance -= bet;
-      if (currentHand === 'player') {
-        currentBet += bet;
-      } else {
-        splitBet += bet;
-      }
-      
-      hand.push(deck.pop());
-      canDouble = false;
-      
-      const value = calculateHandValue(hand);
-      if (value > 21) {
-        if (currentHand === 'player') {
-          showResult('player', 'Bust!', 'lose');
-          if (splitHand.length > 0) {
-            currentHand = 'split';
-          } else {
-            endGame();
-          }
-        } else {
-          showResult('split', 'Bust!', 'lose');
-          endGame();
-        }
-      } else {
-        stand();
-      }
-      updateUI();
-    }
-
-    function split() {
-      if (playerHand[0].value !== playerHand[1].value) return;
-      if (balance < currentBet) return;
-
-      splitHand.push(playerHand.pop());
-      splitBet = currentBet;
-      balance -= splitBet;
-      canSplit = false;
-      canDouble = true;
-
-      updateUI();
-    }
-
-    function insurance() {
-      if (dealerHand[0].value !== 'A') return;
-      const insuranceAmount = Math.floor(currentBet / 2);
-      if (balance < insuranceAmount) return;
-
-      balance -= insuranceAmount;
-      insuranceTaken = true;
-      updateUI();
-
-      if (dealerHand[1].value === '10' || dealerHand[1].value === 'J' || 
-          dealerHand[1].value === 'Q' || dealerHand[1].value === 'K') {
-        const dealerSection = document.querySelector('.dealer-cards');
-        dealerSection.classList.remove('dealer-hidden');
-        document.getElementById('dealerResult').innerHTML = '<div class="result win">Dealer has Blackjack! Insurance pays 2:1</div>';
-        balance += currentBet + insuranceAmount * 3;
-        endGame();
-      }
-    }
-
-    function showResult(hand, message, type) {
-      const resultEl = document.getElementById(hand === 'player' ? 'playerResult' : 'splitResult');
-      resultEl.innerHTML = `<div class="result ${type}">${message}</div>`;
-    }
-
-    function determineWinner() {
-      const dealerValue = calculateHandValue(dealerHand);
-      const playerValue = calculateHandValue(playerHand);
-      const splitValue = splitHand.length > 0 ? calculateHandValue(splitHand) : 0;
-
-      let insuranceWin = 0;
-      if (insuranceTaken) {
-        if (dealerValue === 21 && dealerHand.length === 2) {
-          insuranceWin = currentBet;
-        }
-      }
-
-      if (dealerValue > 21) {
-        document.getElementById('dealerResult').innerHTML = '<div class="result lose">Dealer busts!</div>';
-        balance += currentBet * 2;
-        if (splitHand.length > 0) {
-          if (splitValue <= 21) {
-            balance += splitBet * 2;
-            showResult('split', 'You win!', 'win');
-          } else {
-            showResult('split', 'Bust!', 'lose');
-          }
-        }
-      } else if (dealerValue === 21 && dealerHand.length === 2) {
-        document.getElementById('dealerResult').innerHTML = '<div class="result lose">Dealer Blackjack!</div>';
-        if (playerValue === 21 && playerHand.length === 2) {
-          balance += currentBet;
-          showResult('player', 'Push - Both have Blackjack!', 'push');
-        } else {
-          showResult('player', 'You lose!', 'lose');
-        }
-        if (splitHand.length > 0) {
-          if (splitValue === 21) {
-            balance += splitBet;
-            showResult('split', 'Push!', 'push');
-          } else {
-            showResult('split', 'You lose!', 'lose');
-          }
-        }
-      } else {
-        if (playerValue > dealerValue && playerValue <= 21) {
-          document.getElementById('playerResult').innerHTML = '<div class="result win">You win!</div>';
-          balance += currentBet * 2;
-        } else if (playerValue === dealerValue) {
-          document.getElementById('playerResult').innerHTML = '<div class="result push">Push!</div>';
-          balance += currentBet;
-        } else {
-          document.getElementById('playerResult').innerHTML = '<div class="result lose">Dealer wins!</div>';
-        }
-
-        if (splitHand.length > 0) {
-          if (splitValue > dealerValue && splitValue <= 21) {
-            balance += splitBet * 2;
-            showResult('split', 'You win!', 'win');
-          } else if (splitValue === dealerValue) {
-            balance += splitBet;
-            showResult('split', 'Push!', 'push');
-          } else if (splitValue > 21) {
-            showResult('split', 'Bust!', 'lose');
-          } else {
-            showResult('split', 'Dealer wins!', 'lose');
-          }
-        }
-      }
-
-      endGame();
-    }
-
-    function endGame() {
-      document.getElementById('gameControls').classList.add('hidden');
-      document.getElementById('betControls').classList.remove('hidden');
-      document.getElementById('balance').textContent = balance;
-      currentHand = 'done';
-      updateButtons();
-
-      if (balance <= 0) {
-        setTimeout(() => {
-          if (confirm('Out of money! Start a new game?')) {
-            balance = 1000;
-            document.getElementById('balance').textContent = balance;
-          }
-        }, 1000);
-      }
-    }
-  </script>
+  <script src="main.js"></script>
 </body>
 </html>

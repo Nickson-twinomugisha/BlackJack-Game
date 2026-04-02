@@ -1,0 +1,82 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, sans-serif; background: #1a5f2a; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; color: #fff; }
+h1 { font-size: 2.5rem; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+.game-area { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 900px; }
+.hand-section { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 20px; }
+.hand-label { font-size: 1.2rem; margin-bottom: 10px; display: flex; justify-content: space-between; }
+.cards { display: flex; gap: 10px; min-height: 120px; flex-wrap: wrap; }
+.card { width: 80px; height: 120px; background: #fff; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; padding: 8px; font-weight: bold; font-size: 1.2rem; box-shadow: 2px 2px 8px rgba(0,0,0,0.3); transition: transform 0.3s; }
+.card.dealing { animation: dealCard 0.3s ease-out; }
+@keyframes dealCard { from { transform: translateY(-50px) rotate(10deg); opacity: 0; } to { transform: translateY(0) rotate(0); opacity: 1; } }
+.card.red { color: #c00; }
+.card.black { color: #000; }
+.card-value { text-align: left; }
+.card-suit { text-align: center; font-size: 2rem; }
+.card-value-bottom { text-align: right; transform: rotate(180deg); }
+.controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
+button { padding: 12px 24px; font-size: 1rem; border: none; border-radius: 5px; cursor: pointer; transition: transform 0.1s, background 0.2s; font-weight: bold; }
+button:hover { transform: scale(1.05); }
+button:active { transform: scale(0.95); }
+button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-deal { background: #28a745; color: #fff; }
+.btn-hit { background: #007bff; color: #fff; }
+.btn-stand { background: #dc3545; color: #fff; }
+.btn-double { background: #ffc107; color: #000; }
+.btn-split { background: #6f42c1; color: #fff; }
+.btn-insurance { background: #17a2b8; color: #fff; }
+.btn-stats { background: #e67e22; color: #fff; }
+.btn-achievements { background: #9b59b6; color: #fff; }
+.btn-reset { background: #7f8c8d; color: #fff; }
+.result { font-size: 1.5rem; font-weight: bold; text-align: center; padding: 15px; border-radius: 8px; margin-top: 10px; }
+.result.win { background: #28a745; }
+.result.lose { background: #dc3545; }
+.result.push { background: #ffc107; color: #000; }
+.result.blackjack { background: #ffd700; color: #000; animation: glow 1s infinite alternate; }
+@keyframes glow { from { box-shadow: 0 0 5px #ffd700; } to { box-shadow: 0 0 20px #ffd700; } }
+.hidden { visibility: hidden; }
+.balance { font-size: 1.2rem; margin-bottom: 10px; }
+.bet-display { font-size: 1rem; margin-bottom: 5px; }
+.dealer-hidden .card:not(.revealed) { background: #333; }
+.dealer-hidden .card:not(.revealed) .card-value,
+.dealer-hidden .card:not(.revealed) .card-suit,
+.dealer-hidden .card:not(.revealed) .card-value-bottom { color: #333; }
+
+.progression-bar { width: 100%; max-width: 400px; margin-bottom: 15px; text-align: center; }
+.progression-info { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px; }
+.bar-container { background: #333; border-radius: 10px; height: 20px; overflow: hidden; }
+.bar-fill { background: linear-gradient(90deg, #f39c12, #e74c3c); height: 100%; transition: width 0.5s ease; border-radius: 10px; }
+
+.streak-display { font-size: 1.1rem; padding: 8px 16px; border-radius: 20px; margin-bottom: 10px; display: inline-block; }
+.streak-hot { background: linear-gradient(135deg, #e74c3c, #f39c12); animation: pulse 0.5s infinite alternate; }
+.streak-cold { background: #3498db; }
+.streak-neutral { background: #7f8c8d; }
+@keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+
+.level-badge { background: linear-gradient(135deg, #f1c40f, #e67e22); padding: 5px 15px; border-radius: 15px; font-weight: bold; color: #000; }
+
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
+.modal.active { display: flex; }
+.modal-content { background: #2c3e50; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
+.modal h2 { margin-bottom: 20px; text-align: center; border-bottom: 2px solid #f39c12; padding-bottom: 10px; }
+.modal-close { position: absolute; top: 20px; right: 20px; font-size: 2rem; cursor: pointer; }
+.stat-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #555; }
+.stat-value { font-weight: bold; color: #f39c12; }
+
+.achievements-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.achievement { background: #34495e; padding: 15px; border-radius: 10px; text-align: center; opacity: 0.4; transition: all 0.3s; }
+.achievement.unlocked { opacity: 1; background: linear-gradient(135deg, #27ae60, #2ecc71); }
+.achievement-icon { font-size: 2rem; margin-bottom: 5px; }
+.achievement-name { font-size: 0.9rem; font-weight: bold; }
+.achievement-desc { font-size: 0.75rem; color: #bdc3c7; }
+
+.new-achievement { animation: achievementPop 0.5s ease; }
+@keyframes achievementPop { 0% { transform: scale(0); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+.streak-bonus { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; font-weight: bold; color: #f1c40f; text-shadow: 0 0 20px #e74c3c; animation: streakBonus 1.5s ease-out forwards; pointer-events: none; z-index: 50; }
+@keyframes streakBonus { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 30% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -100%) scale(1); } }
+
+.xp-popup { position: fixed; top: 20%; left: 50%; transform: translateX(-50%); font-size: 1.5rem; font-weight: bold; color: #2ecc71; animation: xpPopup 1s ease-out forwards; pointer-events: none; z-index: 50; }
+@keyframes xpPopup { 0% { opacity: 0; transform: translateX(-50%) translateY(20px); } 100% { opacity: 0; transform: translateX(-50%) translateY(-50px); } }
+
+.top-bar { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; }
+.xp-info { font-size: 0.9rem; color: #bdc3c7; }
